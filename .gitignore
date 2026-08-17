@@ -1,0 +1,111 @@
+# Markdown: exclude all except root README
+*.md
+!README.md
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+parts/
+var/
+sdist/
+develop-eggs/
+.installed.cfg
+lib/
+lib64/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+.env
+
+# Environment variables
+.env.local
+.env.*.local
+*.env
+*.env.example
+
+# FastAPI / Uvicorn
+*.log
+
+# SQLite databases
+*.db
+*.sqlite
+*.sqlite3
+
+# ChromaDB persistence
+chroma_db/
+.chroma/
+
+# Uploaded receipts and PDFs
+data/uploads/
+
+# LangChain cache
+.langchain.db
+langchain_cache/
+
+# pytest
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Node / Expo
+node_modules/
+.expo/
+dist/
+web-build/
+.expo-shared/
+
+# EAS Build
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+
+# React Native
+android/
+ios/
+
+# TypeScript
+*.tsbuildinfo
+
+# Package managers
+yarn-error.log
+npm-debug.log*
+yarn-debug.log*
+.pnpm-debug.log*
+
+# OS artifacts (Windows + macOS)
+Thumbs.db
+Desktop.ini
+.DS_Store
+*.swp
+*.swo
+
+# IDEs
+.vscode/
+.idea/
+*.suo
+*.user
+
+# Tailscale / network config
+*.conf
+tailscale.state

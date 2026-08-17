@@ -1,0 +1,1 @@
+#  This package is reserved for cross-cutting concerns that don't fit elsewhere: security middleware, API key validation, custom exceptions, and logging configuration.

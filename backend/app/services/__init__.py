@@ -1,0 +1,1 @@
+# holds gemini calls, chromadb, agents etc
