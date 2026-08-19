@@ -48,7 +48,7 @@ chroma_db/
 
 # Uploaded receipts and PDFs
 data/uploads/
-
+data
 # LangChain cache
 .langchain.db
 langchain_cache/

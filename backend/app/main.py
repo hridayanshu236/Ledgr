@@ -1,7 +1,18 @@
-from fastapi import FastAPI
-from app.api.v1.router import router
+﻿from contextlib import asynccontextmanager
 
-app = FastAPI(title="Ledgr API", version="1.0.0")
+from fastapi import FastAPI
+
+from app.api.v1.router import router
+from app.db import init_db
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db()
+    yield
+
+
+app = FastAPI(title="Ledgr API", version="1.0.0", lifespan=lifespan)
 
 
 @app.get("/health")
