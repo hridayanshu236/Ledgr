@@ -1,7 +1,7 @@
 import datetime
 from decimal import Decimal
 from enum import StrEnum
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class PaymentMethod(StrEnum):
@@ -25,6 +25,8 @@ class Category(StrEnum):
 
 
 class LineItem(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     name: str
     quantity: Decimal
     unit_price: Decimal
@@ -32,6 +34,8 @@ class LineItem(BaseModel):
 
 
 class TransactionItem(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     merchant_or_entity: str
     date: datetime.date
     amount: Decimal

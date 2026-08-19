@@ -19,7 +19,7 @@ SYSTEM_PROMPT = (
 
 async def extract(file_bytes: bytes, mime_type: str) -> TransactionBatch:
     llm = ChatGoogleGenerativeAI(
-        model="gemini-3.6-flash",
+        model=settings.model_name,
         google_api_key=settings.google_api_key,
     )
     structured_llm = llm.with_structured_output(TransactionBatch)

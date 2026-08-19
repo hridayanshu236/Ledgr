@@ -47,7 +47,7 @@ def _extract_text(content: object) -> str:
 
 def query_sql(question: str) -> str:
     llm = ChatGoogleGenerativeAI(
-        model="gemini-3.6-flash",
+        model=settings.model_name,
         google_api_key=settings.google_api_key,
     )
 

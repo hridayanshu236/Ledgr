@@ -51,7 +51,7 @@ _TOOL_MAP = {
 
 async def answer(question: str) -> str:
     llm = ChatGoogleGenerativeAI(
-        model="gemini-3.6-flash",
+        model=settings.model_name,
         google_api_key=settings.google_api_key,
     )
     llm_with_tools = llm.bind_tools(_tools)
@@ -82,6 +82,8 @@ async def answer(question: str) -> str:
     synthesis_prompt = (
         f"User Question: {question}\n\n"
         f"Database Result from {tool_name}:\n{tool_result}\n\n"
+        "All monetary amounts are in Nepali Rupees (NPR). "
+        "Always express amounts as 'NPR X' or 'Rs X', never as '$'. "
         "Provide a clear, direct answer to the user question using the data above."
     )
 
