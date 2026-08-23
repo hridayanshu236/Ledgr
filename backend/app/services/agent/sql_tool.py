@@ -45,13 +45,13 @@ def _extract_text(content: object) -> str:
     return str(content)
 
 
-def query_sql(question: str) -> str:
+async def query_sql(question: str) -> str:
     llm = ChatGoogleGenerativeAI(
         model=settings.model_name,
         google_api_key=settings.google_api_key,
     )
 
-    response = llm.invoke(f"{_SQL_GEN_PROMPT}\nQuestion: {question}")
+    response = await llm.ainvoke(f"{_SQL_GEN_PROMPT}\nQuestion: {question}")
     raw_text = _extract_text(response.content).strip()
 
     # Strip code fences if the model wraps output in markdown

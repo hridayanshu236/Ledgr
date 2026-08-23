@@ -1,4 +1,4 @@
-﻿from fastapi import APIRouter
+from fastapi import APIRouter
 from pydantic import BaseModel
 
 from app.services.agent import router as agent_router
@@ -8,6 +8,7 @@ router = APIRouter()
 
 class QueryRequest(BaseModel):
     question: str
+    history: list[dict[str, str]] | None = None
 
 
 class QueryResponse(BaseModel):
@@ -16,5 +17,5 @@ class QueryResponse(BaseModel):
 
 @router.post("/", response_model=QueryResponse)
 async def query(request: QueryRequest) -> QueryResponse:
-    result = await agent_router.answer(request.question)
+    result = await agent_router.answer(request.question, request.history)
     return QueryResponse(answer=result)

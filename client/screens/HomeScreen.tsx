@@ -1,22 +1,25 @@
-﻿import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
   StyleSheet,
   Text,
   TouchableOpacity,
+  Dimensions,
   View,
 } from "react-native";
+import { PieChart } from "react-native-chart-kit";
 import { getTransactions } from "../lib/api";
 import { TransactionItem } from "../lib/types";
+import EditTransactionModal from "../components/EditTransactionModal";
 
 interface Props {
   onCapture: () => void;
 }
 
-function TransactionCard({ item }: { item: TransactionItem }) {
+function TransactionCard({ item, onPress }: { item: TransactionItem; onPress: () => void }) {
   return (
-    <View style={styles.card}>
+    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7}>
       <View style={styles.cardRow}>
         <Text style={styles.merchant} numberOfLines={1}>
           {item.merchant_or_entity}
@@ -32,7 +35,7 @@ function TransactionCard({ item }: { item: TransactionItem }) {
           {item.remarks}
         </Text>
       ) : null}
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -40,6 +43,9 @@ export default function HomeScreen({ onCapture }: Props) {
   const [transactions, setTransactions] = useState<TransactionItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedTx, setSelectedTx] = useState<TransactionItem | null>(null);
+
+  const screenWidth = Dimensions.get("window").width;
 
   const load = useCallback(async () => {
     try {
@@ -58,9 +64,27 @@ export default function HomeScreen({ onCapture }: Props) {
     load();
   }, [load]);
 
+  // Group by category for the pie chart
+  const categoryTotals: Record<string, number> = {};
+  transactions.forEach((tx) => {
+    const amount = parseFloat(tx.amount || "0");
+    categoryTotals[tx.category] = (categoryTotals[tx.category] || 0) + amount;
+  });
+
+  const colors = ["#6C63FF", "#FF6584", "#38B2AC", "#ECC94B", "#ED8936", "#9F7AEA", "#F56565"];
+  const chartData = Object.keys(categoryTotals).map((cat, index) => ({
+    name: cat,
+    amount: categoryTotals[cat],
+    color: colors[index % colors.length],
+    legendFontColor: "#888",
+    legendFontSize: 12,
+  }));
+
   return (
     <View style={styles.container}>
-      <Text style={styles.heading}>Ledgr</Text>
+      <View style={styles.headerRow}>
+        <Text style={styles.heading}>Ledgr</Text>
+      </View>
 
       {loading && <ActivityIndicator style={styles.center} size="large" color="#6C63FF" />}
 
@@ -80,29 +104,82 @@ export default function HomeScreen({ onCapture }: Props) {
         </View>
       )}
 
-      <FlatList
-        data={transactions}
-        keyExtractor={(_, i) => String(i)}
-        renderItem={({ item }) => <TransactionCard item={item} />}
-        contentContainerStyle={styles.list}
-      />
+      {!loading && !error && transactions.length > 0 && (
+        <FlatList
+          data={transactions}
+          keyExtractor={(item, i) => item.id || String(i)}
+          ListHeaderComponent={
+            <View style={styles.chartContainer}>
+              <Text style={styles.chartTitle}>Spending Breakdown</Text>
+              {chartData.length > 0 ? (
+                <PieChart
+                  data={chartData}
+                  width={screenWidth - 32}
+                  height={180}
+                  chartConfig={{
+                    color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+                  }}
+                  accessor={"amount"}
+                  backgroundColor={"transparent"}
+                  paddingLeft={"15"}
+                  center={[10, 0]}
+                  absolute
+                />
+              ) : (
+                <Text style={styles.emptySubtext}>No data for chart</Text>
+              )}
+            </View>
+          }
+          renderItem={({ item }) => (
+            <TransactionCard item={item} onPress={() => setSelectedTx(item)} />
+          )}
+          contentContainerStyle={styles.list}
+        />
+      )}
 
       <TouchableOpacity style={styles.fab} onPress={onCapture} activeOpacity={0.85}>
         <Text style={styles.fabText}>+</Text>
       </TouchableOpacity>
+
+      <EditTransactionModal
+        visible={!!selectedTx}
+        transaction={selectedTx}
+        onClose={() => setSelectedTx(null)}
+        onUpdated={load}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#0F0F1A" },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingTop: 60,
+    paddingHorizontal: 20,
+    paddingBottom: 12,
+  },
   heading: {
     fontSize: 28,
     fontWeight: "700",
     color: "#E8E8F0",
-    paddingTop: 60,
-    paddingHorizontal: 20,
-    paddingBottom: 12,
+  },
+  chartContainer: {
+    backgroundColor: "#1C1C2E",
+    borderRadius: 16,
+    paddingVertical: 16,
+    marginBottom: 16,
+    alignItems: "center",
+  },
+  chartTitle: {
+    color: "#E8E8F0",
+    fontSize: 16,
+    fontWeight: "600",
+    alignSelf: "flex-start",
+    paddingHorizontal: 16,
+    marginBottom: 8,
   },
   list: { paddingHorizontal: 16, paddingBottom: 100 },
   card: {

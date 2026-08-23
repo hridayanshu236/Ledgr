@@ -27,6 +27,7 @@ class Category(StrEnum):
 class LineItem(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
+    id: str | None = None
     name: str
     quantity: Decimal
     unit_price: Decimal
@@ -36,6 +37,7 @@ class LineItem(BaseModel):
 class TransactionItem(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
+    id: str | None = None
     merchant_or_entity: str
     date: datetime.date
     amount: Decimal

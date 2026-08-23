@@ -1,7 +1,8 @@
-﻿import * as DocumentPicker from "expo-document-picker";
+import * as DocumentPicker from "expo-document-picker";
 import * as ImageManipulator from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
 import React, { useState } from "react";
+import { Ionicons } from "@expo/vector-icons";
 import {
   ActivityIndicator,
   Alert,
@@ -97,19 +98,19 @@ export default function CaptureScreen({ onResult, onBack }: Props) {
 
       <View style={styles.optionsContainer}>
         <TouchableOpacity style={styles.optionCard} onPress={fromCamera} activeOpacity={0.8}>
-          <Text style={styles.optionIcon}>📷</Text>
+          <Ionicons name="camera" size={32} color="#6C63FF" style={styles.optionIcon} />
           <Text style={styles.optionTitle}>Camera</Text>
           <Text style={styles.optionDesc}>Take a photo of a physical receipt</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.optionCard} onPress={fromGallery} activeOpacity={0.8}>
-          <Text style={styles.optionIcon}>🖼</Text>
+          <Ionicons name="image" size={32} color="#6C63FF" style={styles.optionIcon} />
           <Text style={styles.optionTitle}>Gallery</Text>
           <Text style={styles.optionDesc}>Pick a payment screenshot or photo</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.optionCard} onPress={fromDocument} activeOpacity={0.8}>
-          <Text style={styles.optionIcon}>📄</Text>
+          <Ionicons name="document-text" size={32} color="#6C63FF" style={styles.optionIcon} />
           <Text style={styles.optionTitle}>PDF</Text>
           <Text style={styles.optionDesc}>Import a bank statement or PDF receipt</Text>
         </TouchableOpacity>
@@ -141,7 +142,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#2A2A3E",
   },
-  optionIcon: { fontSize: 32, marginBottom: 12 },
+  optionIcon: { marginBottom: 12 },
   optionTitle: { fontSize: 18, fontWeight: "700", color: "#E8E8F0", marginBottom: 6 },
   optionDesc: { fontSize: 13, color: "#666", lineHeight: 18 },
 });

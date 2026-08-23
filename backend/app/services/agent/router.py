@@ -1,6 +1,6 @@
 import inspect
 
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
 from langchain_core.tools import StructuredTool
 from langchain_google_genai import ChatGoogleGenerativeAI
 
@@ -25,7 +25,7 @@ def _extract_text(content: object) -> str:
 
 _tools = [
     StructuredTool.from_function(
-        func=query_sql,
+        coroutine=query_sql,
         name="sql_query",
         description=(
             "Use for quantitative questions: totals, averages, counts, date-range filters, "
@@ -49,7 +49,19 @@ _TOOL_MAP = {
 }
 
 
-async def answer(question: str) -> str:
+def _build_messages(question: str, history: list[dict[str, str]] | None) -> list[BaseMessage]:
+    messages: list[BaseMessage] = []
+    if history:
+        for msg in history:
+            if msg.get("role") == "user":
+                messages.append(HumanMessage(content=msg.get("content", "")))
+            elif msg.get("role") == "bot":
+                messages.append(AIMessage(content=msg.get("content", "")))
+    messages.append(HumanMessage(content=question))
+    return messages
+
+
+async def answer(question: str, history: list[dict[str, str]] | None = None) -> str:
     llm = ChatGoogleGenerativeAI(
         model=settings.model_name,
         google_api_key=settings.google_api_key,
@@ -57,7 +69,8 @@ async def answer(question: str) -> str:
     llm_with_tools = llm.bind_tools(_tools)
 
     # 1. Routing call
-    response = await llm_with_tools.ainvoke([HumanMessage(content=question)])
+    messages = _build_messages(question, history)
+    response = await llm_with_tools.ainvoke(messages)
 
     if not response.tool_calls:
         return _extract_text(response.content)
@@ -73,19 +86,27 @@ async def answer(question: str) -> str:
     tool_args = tool_call.get("args", {})
     query_param = tool_args.get("question", question)
 
+    # Inject recent history so the tool LLM understands pronouns like "it" or "that bill"
+    history_str = ""
+    if history:
+        history_str = "Conversation History:\n" + "\n".join([f"{m.get('role')}: {m.get('content')}" for m in history[-4:]]) + "\n\n"
+    
+    enriched_query = f"{history_str}Current Question: {query_param}"
+
     if inspect.iscoroutinefunction(tool_fn):
-        tool_result = await tool_fn(query_param)
+        tool_result = await tool_fn(enriched_query)
     else:
-        tool_result = tool_fn(query_param)
+        tool_result = tool_fn(enriched_query)
 
     # 3. Final synthesis without breaking thought signatures
     synthesis_prompt = (
-        f"User Question: {question}\n\n"
-        f"Database Result from {tool_name}:\n{tool_result}\n\n"
-        "All monetary amounts are in Nepali Rupees (NPR). "
-        "Always express amounts as 'NPR X' or 'Rs X', never as '$'. "
-        "Provide a clear, direct answer to the user question using the data above."
+        f"System Context:\nDatabase Result from {tool_name}:\n{tool_result}\n\n"
+        "Instructions:\n"
+        "1. All monetary amounts are in Nepali Rupees (NPR). Always express amounts as 'NPR X' or 'Rs X', never as '$'.\n"
+        "2. Provide a clear, direct answer to the user's last question using the database result above.\n"
+        "3. IMPORTANT: Provide the answer in PLAIN TEXT only. Do NOT use any markdown formatting (no **asterisks** for bold, no italics, no code blocks)."
     )
 
-    final_response = await llm.ainvoke([HumanMessage(content=synthesis_prompt)])
+    synthesis_messages = messages[:-1] + [HumanMessage(content=f"{messages[-1].content}\n\n{synthesis_prompt}")]
+    final_response = await llm.ainvoke(synthesis_messages)
     return _extract_text(final_response.content)
