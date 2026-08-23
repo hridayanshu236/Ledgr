@@ -1,4 +1,4 @@
-﻿import React, { useState } from "react";
+import React, { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -119,7 +119,10 @@ export default function ReviewScreen({ batch, onConfirmed, onBack }: Props) {
         { text: "OK", onPress: onConfirmed },
       ]);
     } catch (e: any) {
-      const detail = e?.response?.data?.detail ?? e?.message ?? "Unknown error";
+      let detail = e?.response?.data?.detail ?? e?.message ?? "Unknown error";
+      if (typeof detail !== "string") {
+        detail = JSON.stringify(detail, null, 2);
+      }
       Alert.alert("Save failed", detail);
     } finally {
       setSaving(false);

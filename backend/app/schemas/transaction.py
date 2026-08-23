@@ -44,6 +44,7 @@ class TransactionItem(BaseModel):
     payment_method: PaymentMethod
     category: Category
     remarks: str | None = None
+    file_path: str | None = None
     line_items: list[LineItem] = []
 
 

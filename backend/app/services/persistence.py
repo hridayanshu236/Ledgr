@@ -1,4 +1,4 @@
-﻿import uuid
+import uuid
 from pathlib import Path
 
 from sqlalchemy.orm import Session
@@ -9,32 +9,32 @@ from app.schemas.transaction import TransactionBatch, TransactionItem
 from app.services import vector_store
 
 
+def save_image_to_disk(file_bytes: bytes, filename: str) -> str:
+    ext = filename.rsplit(".", 1)[-1] if "." in filename else "bin"
+    file_id = str(uuid.uuid4())
+    upload_path = Path(settings.upload_dir) / f"{file_id}.{ext}"
+    upload_path.parent.mkdir(parents=True, exist_ok=True)
+    upload_path.write_bytes(file_bytes)
+    return str(upload_path)
+
 def save_batch(
     batch: TransactionBatch,
     db: Session,
-    file_bytes: bytes | None = None,
-    filename: str | None = None,
+    user_id: str,
 ) -> None:
     for tx in batch.transactions:
         tx_id = str(uuid.uuid4())
 
-        file_path: str | None = None
-        if file_bytes is not None and filename:
-            ext = filename.rsplit(".", 1)[-1] if "." in filename else "bin"
-            upload_path = Path(settings.upload_dir) / f"{tx_id}.{ext}"
-            upload_path.parent.mkdir(parents=True, exist_ok=True)
-            upload_path.write_bytes(file_bytes)
-            file_path = str(upload_path)
-
         db_tx = Transaction(
             id=tx_id,
+            user_id=user_id,
             merchant_or_entity=tx.merchant_or_entity,
             date=tx.date,
             amount=tx.amount,
             payment_method=tx.payment_method,
             category=tx.category,
             remarks=tx.remarks,
-            file_path=file_path,
+            file_path=tx.file_path,
         )
         db_tx.line_items = [
             LineItem(
@@ -51,4 +51,4 @@ def save_batch(
         db.add(db_tx)
         db.commit()
 
-        vector_store.index_transaction(tx, tx_id)
+        vector_store.index_transaction(tx, tx_id, user_id)

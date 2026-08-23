@@ -1,15 +1,12 @@
-﻿import datetime
+import datetime
 import uuid
 from decimal import Decimal
 
 from sqlalchemy import Date, Enum, ForeignKey, Numeric, String
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.db.base import Base
 from app.schemas.transaction import Category, PaymentMethod
-
-
-class Base(DeclarativeBase):
-    pass
 
 
 class Transaction(Base):
@@ -20,6 +17,7 @@ class Transaction(Base):
         primary_key=True,
         default=lambda: str(uuid.uuid4()),
     )
+    user_id: Mapped[str] = mapped_column(String, ForeignKey("users.id"), nullable=False)
     merchant_or_entity: Mapped[str] = mapped_column(String, nullable=False)
     date: Mapped[datetime.date] = mapped_column(Date, nullable=False)
     amount: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
@@ -39,6 +37,7 @@ class Transaction(Base):
         nullable=False,
     )
 
+    user: Mapped["User"] = relationship("User", back_populates="transactions")
     line_items: Mapped[list["LineItem"]] = relationship(
         "LineItem",
         back_populates="transaction",

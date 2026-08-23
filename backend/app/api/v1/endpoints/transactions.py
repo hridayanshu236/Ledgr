@@ -4,16 +4,22 @@ from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.models.transaction import Transaction as TransactionORM, LineItem as LineItemORM
+from app.models.user import User
 from app.schemas.transaction import TransactionBatch, TransactionItem
 from app.services.persistence import save_batch
+from app.api.deps import get_current_user
 
 router = APIRouter()
 
 
 @router.get("/", response_model=list[TransactionItem])
-def list_transactions(db: Session = Depends(get_db)) -> list[TransactionORM]:
+def list_transactions(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+) -> list[TransactionORM]:
     return (
         db.query(TransactionORM)
+        .filter(TransactionORM.user_id == current_user.id)
         .order_by(TransactionORM.created_at.desc())
         .limit(50)
         .all()
@@ -21,14 +27,26 @@ def list_transactions(db: Session = Depends(get_db)) -> list[TransactionORM]:
 
 
 @router.post("/confirm/", response_model=TransactionBatch)
-def confirm_batch(batch: TransactionBatch, db: Session = Depends(get_db)) -> TransactionBatch:
-    save_batch(batch, db)
+def confirm_batch(
+    batch: TransactionBatch, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+) -> TransactionBatch:
+    save_batch(batch, db, current_user.id)
     return batch
 
 
 @router.put("/{tx_id}", response_model=TransactionItem)
-def update_transaction(tx_id: str, tx: TransactionItem, db: Session = Depends(get_db)):
-    db_tx = db.query(TransactionORM).filter(TransactionORM.id == tx_id).first()
+def update_transaction(
+    tx_id: str, 
+    tx: TransactionItem, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    db_tx = db.query(TransactionORM).filter(
+        TransactionORM.id == tx_id, 
+        TransactionORM.user_id == current_user.id
+    ).first()
     if not db_tx:
         raise HTTPException(status_code=404, detail="Transaction not found")
         
@@ -57,14 +75,21 @@ def update_transaction(tx_id: str, tx: TransactionItem, db: Session = Depends(ge
     db.commit()
     
     from app.services import vector_store
-    vector_store.update_transaction(tx, tx_id)
+    vector_store.update_transaction(tx, tx_id, current_user.id)
     
     return tx
 
 
 @router.delete("/{tx_id}")
-def delete_transaction(tx_id: str, db: Session = Depends(get_db)):
-    db_tx = db.query(TransactionORM).filter(TransactionORM.id == tx_id).first()
+def delete_transaction(
+    tx_id: str, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    db_tx = db.query(TransactionORM).filter(
+        TransactionORM.id == tx_id, 
+        TransactionORM.user_id == current_user.id
+    ).first()
     if not db_tx:
         raise HTTPException(status_code=404, detail="Transaction not found")
         

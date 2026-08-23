@@ -17,10 +17,10 @@ SYSTEM_PROMPT = (
 )
 
 
-async def extract(file_bytes: bytes, mime_type: str) -> TransactionBatch:
+async def extract(file_bytes: bytes, mime_type: str, api_key: str) -> TransactionBatch:
     llm = ChatGoogleGenerativeAI(
         model=settings.model_name,
-        google_api_key=settings.google_api_key,
+        google_api_key=api_key,
     )
     structured_llm = llm.with_structured_output(TransactionBatch)
 

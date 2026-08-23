@@ -1,111 +1,145 @@
 import { StatusBar } from "expo-status-bar";
 import React, { useState } from "react";
+import * as SecureStore from "expo-secure-store";
+import { NavigationContainer } from "@react-navigation/native";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { Ionicons } from "@expo/vector-icons";
+import { StyleSheet, View, Text, TouchableOpacity } from "react-native";
+
+import { setAuthToken } from "./lib/api";
 import CaptureScreen from "./screens/CaptureScreen";
 import HomeScreen from "./screens/HomeScreen";
-import ReviewScreen from "./screens/ReviewScreen";
 import QueryScreen from "./screens/QueryScreen";
+import ReviewScreen from "./screens/ReviewScreen";
+import AuthScreen from "./screens/AuthScreen";
+import SettingsScreen from "./screens/SettingsScreen";
 import { TransactionBatch } from "./lib/types";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 
-interface Message {
-  role: "user" | "bot";
-  content: string;
-}
-
-type Screen = "home" | "capture" | "review" | "query";
+const Tab = createBottomTabNavigator();
 
 export default function App() {
-  const [screen, setScreen] = useState<Screen>("home");
+  const [token, setToken] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // App-level state for capture/review flow outside of tabs if needed, 
+  // or we can just use simple state toggles inside the Home tab.
+  const [isCapturing, setIsCapturing] = useState(false);
   const [pendingBatch, setPendingBatch] = useState<TransactionBatch | null>(null);
-  const [messages, setMessages] = useState<Message[]>([
+
+  // Chat memory state
+  const [chatHistory, setChatHistory] = useState<{ role: "user" | "bot"; content: string }[]>([
     {
       role: "bot",
       content: "Hello! You can ask me questions about your spending, like 'How much did I spend on dining this month?' or 'Where did I buy filter coffee?'.",
     },
   ]);
 
+  React.useEffect(() => {
+    async function checkAuth() {
+      const storedToken = await SecureStore.getItemAsync("token");
+      if (storedToken) {
+        setToken(storedToken);
+        setAuthToken(storedToken);
+      }
+      setIsLoading(false);
+    }
+    checkAuth();
+  }, []);
+
+  async function handleLogin(newToken: string) {
+    await SecureStore.setItemAsync("token", newToken);
+    setToken(newToken);
+    setAuthToken(newToken);
+  }
+
+  async function handleLogout() {
+    await SecureStore.deleteItemAsync("token");
+    setToken(null);
+    setAuthToken(null);
+  }
+
+  if (isLoading) return null;
+
+  if (!token) {
+    return (
+      <View style={{ flex: 1, backgroundColor: "#0F0F1A" }}>
+        <StatusBar style="light" />
+        <AuthScreen onLogin={handleLogin} />
+      </View>
+    );
+  }
+
   function handleCaptureResult(batch: TransactionBatch) {
+    setIsCapturing(false);
     setPendingBatch(batch);
-    setScreen("review");
   }
 
   function handleConfirmed() {
     setPendingBatch(null);
-    setScreen("home");
+  }
+
+  // If we are in the middle of a review flow, show it over everything
+  if (pendingBatch) {
+    return (
+      <View style={{ flex: 1 }}>
+        <StatusBar style="light" />
+        <ReviewScreen
+          batch={pendingBatch}
+          onConfirmed={handleConfirmed}
+          onBack={() => setPendingBatch(null)}
+        />
+      </View>
+    );
+  }
+
+  // If capturing, show capture screen
+  if (isCapturing) {
+    return (
+      <View style={{ flex: 1 }}>
+        <StatusBar style="light" />
+        <CaptureScreen
+          onResult={handleCaptureResult}
+          onBack={() => setIsCapturing(false)}
+        />
+      </View>
+    );
   }
 
   return (
-    <View style={styles.appContainer}>
+    <NavigationContainer>
       <StatusBar style="light" />
-      <View style={styles.screenContainer}>
-        {screen === "home" && (
-          <HomeScreen onCapture={() => setScreen("capture")} />
-        )}
-        {screen === "capture" && (
-        <CaptureScreen
-          onResult={handleCaptureResult}
-          onBack={() => setScreen("home")}
-        />
-      )}
-        {screen === "review" && pendingBatch && (
-          <ReviewScreen
-            batch={pendingBatch}
-            onConfirmed={handleConfirmed}
-            onBack={() => setScreen("capture")}
-          />
-        )}
-        {screen === "query" && (
-          <QueryScreen messages={messages} setMessages={setMessages} />
-        )}
-      </View>
-
-      {(screen === "home" || screen === "query") && (
-        <View style={styles.tabBar}>
-          <TouchableOpacity
-            style={styles.tab}
-            onPress={() => setScreen("home")}
-          >
-            <Ionicons
-              name={screen === "home" ? "home" : "home-outline"}
-              size={24}
-              color={screen === "home" ? "#6C63FF" : "#666"}
-              style={styles.tabIcon}
-            />
-            <Text style={[styles.tabLabel, screen === "home" && styles.tabActive]}>Dashboard</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.tab}
-            onPress={() => setScreen("query")}
-          >
-            <Ionicons
-              name={screen === "query" ? "chatbubbles" : "chatbubbles-outline"}
-              size={24}
-              color={screen === "query" ? "#6C63FF" : "#666"}
-              style={styles.tabIcon}
-            />
-            <Text style={[styles.tabLabel, screen === "query" && styles.tabActive]}>Ledgr AI</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-    </View>
+      <Tab.Navigator
+        screenOptions={({ route }) => ({
+          tabBarIcon: ({ focused, color, size }) => {
+            let iconName = "home";
+            if (route.name === "Dashboard") {
+              iconName = focused ? "home" : "home-outline";
+            } else if (route.name === "Ledgr AI") {
+              iconName = focused ? "chatbubbles" : "chatbubbles-outline";
+            } else if (route.name === "Settings") {
+              iconName = focused ? "settings" : "settings-outline";
+            }
+            return <Ionicons name={iconName as any} size={size} color={color} />;
+          },
+          tabBarActiveTintColor: "#6C63FF",
+          tabBarInactiveTintColor: "#888",
+          tabBarStyle: {
+            backgroundColor: "#1C1C2E",
+            borderTopColor: "#2A2A3E",
+          },
+          headerShown: false,
+        })}
+      >
+        <Tab.Screen name="Dashboard">
+          {() => <HomeScreen onCapture={() => setIsCapturing(true)} />}
+        </Tab.Screen>
+        <Tab.Screen name="Ledgr AI">
+          {() => <QueryScreen messages={chatHistory} setMessages={setChatHistory} />}
+        </Tab.Screen>
+        <Tab.Screen name="Settings">
+          {() => <SettingsScreen onLogout={handleLogout} />}
+        </Tab.Screen>
+      </Tab.Navigator>
+    </NavigationContainer>
   );
 }
-
-const styles = StyleSheet.create({
-  appContainer: { flex: 1, backgroundColor: "#0F0F1A" },
-  screenContainer: { flex: 1 },
-  tabBar: {
-    flexDirection: "row",
-    backgroundColor: "#1C1C2E",
-    borderTopWidth: 1,
-    borderTopColor: "#2A2A3E",
-    paddingBottom: 24, // safe area padding
-    paddingTop: 12,
-  },
-  tab: { flex: 1, alignItems: "center", justifyContent: "center" },
-  tabIcon: { marginBottom: 4 },
-  tabLabel: { fontSize: 12, fontWeight: "600", color: "#666" },
-  tabActive: { color: "#6C63FF" },
-});
-

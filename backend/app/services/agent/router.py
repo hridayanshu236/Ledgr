@@ -61,10 +61,13 @@ def _build_messages(question: str, history: list[dict[str, str]] | None) -> list
     return messages
 
 
-async def answer(question: str, history: list[dict[str, str]] | None = None) -> str:
+async def answer(question: str, user_id: str, api_key: str | None = None, history: list[dict[str, str]] | None = None) -> str:
+    if not api_key:
+        raise ValueError("API Key is missing")
+        
     llm = ChatGoogleGenerativeAI(
         model=settings.model_name,
-        google_api_key=settings.google_api_key,
+        google_api_key=api_key,
     )
     llm_with_tools = llm.bind_tools(_tools)
 
@@ -94,9 +97,9 @@ async def answer(question: str, history: list[dict[str, str]] | None = None) -> 
     enriched_query = f"{history_str}Current Question: {query_param}"
 
     if inspect.iscoroutinefunction(tool_fn):
-        tool_result = await tool_fn(enriched_query)
+        tool_result = await tool_fn(enriched_query, user_id=user_id, api_key=api_key)
     else:
-        tool_result = tool_fn(enriched_query)
+        tool_result = tool_fn(enriched_query, user_id=user_id, api_key=api_key)
 
     # 3. Final synthesis without breaking thought signatures
     synthesis_prompt = (

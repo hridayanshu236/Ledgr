@@ -1,6 +1,6 @@
-﻿# Ledgr
+# Ledgr
 
-> Turn crumpled receipts, payment screenshots, and PDF bank statements into a queryable, self-hosted relational & semantic personal finance ledger.
+> Turn crumpled receipts, payment screenshots, and PDF bank statements into a queryable, multi-user relational & semantic personal finance SaaS.
 
 Ledgr is a personal finance assistant that understands your spending without requiring you to enter data manually. Photograph a receipt, screenshot an eSewa or Khalti payment, or upload a bank statement PDF — the system extracts structured transaction data using a multimodal LLM and lets you query it in plain English.
 
@@ -43,7 +43,7 @@ All infrastructure runs at zero cost:
 | Component | Service |
 |---|---|
 | Backend | Oracle Cloud Always Free VM (Ubuntu) |
-| Networking | Tailscale zero-trust mesh |
+| Authentication | Multi-user JWT with Bring-Your-Own-Key (BYOK) Gemini integration |
 | AI API | Google AI Studio (Gemini Flash, free tier) |
 | Mobile builds | EAS Cloud Builds (free tier) |
 
@@ -65,7 +65,7 @@ All infrastructure runs at zero cost:
 
 **Infrastructure**
 - Oracle Cloud Always Free VM
-- Tailscale (private mesh networking)
+- Multi-User SaaS (JWT Auth, User-isolated DBs)
 - EAS Cloud Builds (Android & iOS, no local Mac required)
 
 ---
@@ -80,16 +80,15 @@ All infrastructure runs at zero cost:
 - [x] Text-to-SQL routing for quantitative questions (totals, averages, date filters)
 - [x] Vector search routing for fuzzy/semantic questions
 - [x] File storage of original uploaded receipts
-
-### In Progress
-- [ ] React Native mobile client (capture + review + confirm flow)
-- [ ] Conversational query screen in the mobile app
+- [x] React Native mobile client (capture + review + confirm flow)
+- [x] Conversational query screen in the mobile app
+- [x] Multi-user JWT Authentication
+- [x] Bring-Your-Own-Key (BYOK) Gemini AI support
+- [x] Deployment to Oracle Cloud VM via systemd
 
 ### Planned
-- [ ] Deployment to Oracle Cloud VM via systemd
-- [ ] Tailscale-based private access from mobile device
 - [ ] Production EAS build for Android and iOS
-- [ ] API key authentication middleware
+- [ ] HTTPS / Domain registration
 
 ---
 

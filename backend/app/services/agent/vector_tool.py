@@ -4,8 +4,12 @@ from app.db.session import engine
 from app.services.vector_store import collection
 
 
-def query_vector(question: str) -> str:
-    results = collection.query(query_texts=[question], n_results=3)
+def query_vector(question: str, user_id: str, api_key: str | None = None) -> str:
+    results = collection.query(
+        query_texts=[question], 
+        n_results=3,
+        where={"user_id": user_id}
+    )
 
     if not results["ids"][0]:
         return "No semantically similar transactions found."
