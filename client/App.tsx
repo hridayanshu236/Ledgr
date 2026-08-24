@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import * as SecureStore from "expo-secure-store";
 import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { StyleSheet, View, Text, TouchableOpacity, Animated } from "react-native";
 
@@ -82,10 +83,12 @@ export default function App() {
 
   if (!token) {
     return (
-      <View style={{ flex: 1, backgroundColor: "#0F0F1A" }}>
-        <StatusBar style="light" />
-        <AuthScreen onLogin={handleLogin} />
-      </View>
+      <SafeAreaProvider>
+        <View style={{ flex: 1, backgroundColor: "#0F0F1A" }}>
+          <StatusBar style="light" />
+          <AuthScreen onLogin={handleLogin} />
+        </View>
+      </SafeAreaProvider>
     );
   }
 
@@ -101,70 +104,76 @@ export default function App() {
   // If we are in the middle of a review flow, show it over everything
   if (pendingBatch) {
     return (
-      <View style={{ flex: 1 }}>
-        <StatusBar style="light" />
-        <ReviewScreen
-          batch={pendingBatch}
-          onConfirmed={handleConfirmed}
-          onBack={() => setPendingBatch(null)}
-        />
-      </View>
+      <SafeAreaProvider>
+        <View style={{ flex: 1 }}>
+          <StatusBar style="light" />
+          <ReviewScreen
+            batch={pendingBatch}
+            onConfirmed={handleConfirmed}
+            onBack={() => setPendingBatch(null)}
+          />
+        </View>
+      </SafeAreaProvider>
     );
   }
 
   // If capturing, show capture screen
   if (isCapturing) {
     return (
-      <View style={{ flex: 1 }}>
-        <StatusBar style="light" />
-        <CaptureScreen
-          onResult={handleCaptureResult}
-          onBack={() => setIsCapturing(false)}
-        />
-      </View>
+      <SafeAreaProvider>
+        <View style={{ flex: 1 }}>
+          <StatusBar style="light" />
+          <CaptureScreen
+            onResult={handleCaptureResult}
+            onBack={() => setIsCapturing(false)}
+          />
+        </View>
+      </SafeAreaProvider>
     );
   }
 
   return (
-    <NavigationContainer>
-      <StatusBar style="light" />
-      <Tab.Navigator
-        screenOptions={({ route }) => ({
-          tabBarIcon: ({ focused, color, size }) => {
-            let iconName = "home";
-            if (route.name === "Dashboard") {
-              iconName = focused ? "home" : "home-outline";
-            } else if (route.name === "Analytics") {
-              iconName = focused ? "bar-chart" : "bar-chart-outline";
-            } else if (route.name === "Ledgr AI") {
-              iconName = focused ? "chatbubbles" : "chatbubbles-outline";
-            } else if (route.name === "Settings") {
-              iconName = focused ? "settings" : "settings-outline";
-            }
-            return <TabIcon focused={focused} iconName={iconName} size={size} color={color} />;
-          },
-          tabBarActiveTintColor: "#6C63FF",
-          tabBarInactiveTintColor: "#888",
-          tabBarStyle: {
-            backgroundColor: "#1C1C2E",
-            borderTopColor: "#2A2A3E",
-          },
-          headerShown: false,
-        })}
-      >
-        <Tab.Screen name="Dashboard">
-          {() => <HomeScreen onCapture={() => setIsCapturing(true)} />}
-        </Tab.Screen>
-        <Tab.Screen name="Analytics">
-          {() => <AnalyticsScreen />}
-        </Tab.Screen>
-        <Tab.Screen name="Ledgr AI">
-          {() => <QueryScreen messages={chatHistory} setMessages={setChatHistory} />}
-        </Tab.Screen>
-        <Tab.Screen name="Settings">
-          {() => <SettingsScreen onLogout={handleLogout} />}
-        </Tab.Screen>
-      </Tab.Navigator>
-    </NavigationContainer>
+    <SafeAreaProvider>
+      <NavigationContainer>
+        <StatusBar style="light" />
+        <Tab.Navigator
+          screenOptions={({ route }) => ({
+            tabBarIcon: ({ focused, color, size }) => {
+              let iconName = "home";
+              if (route.name === "Dashboard") {
+                iconName = focused ? "home" : "home-outline";
+              } else if (route.name === "Analytics") {
+                iconName = focused ? "bar-chart" : "bar-chart-outline";
+              } else if (route.name === "Ledgr AI") {
+                iconName = focused ? "chatbubbles" : "chatbubbles-outline";
+              } else if (route.name === "Settings") {
+                iconName = focused ? "settings" : "settings-outline";
+              }
+              return <TabIcon focused={focused} iconName={iconName} size={size} color={color} />;
+            },
+            tabBarActiveTintColor: "#6C63FF",
+            tabBarInactiveTintColor: "#888",
+            tabBarStyle: {
+              backgroundColor: "#1C1C2E",
+              borderTopColor: "#2A2A3E",
+            },
+            headerShown: false,
+          })}
+        >
+          <Tab.Screen name="Dashboard">
+            {() => <HomeScreen onCapture={() => setIsCapturing(true)} />}
+          </Tab.Screen>
+          <Tab.Screen name="Analytics">
+            {() => <AnalyticsScreen />}
+          </Tab.Screen>
+          <Tab.Screen name="Ledgr AI">
+            {() => <QueryScreen messages={chatHistory} setMessages={setChatHistory} />}
+          </Tab.Screen>
+          <Tab.Screen name="Settings">
+            {() => <SettingsScreen onLogout={handleLogout} />}
+          </Tab.Screen>
+        </Tab.Navigator>
+      </NavigationContainer>
+    </SafeAreaProvider>
   );
 }
