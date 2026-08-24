@@ -1,182 +1,143 @@
 # Ledgr
 
-> Turn crumpled receipts, payment screenshots, and PDF bank statements into a queryable, multi-user relational & semantic personal finance SaaS.
+> Intelligent Personal Finance Infrastructure
 
-Ledgr is a personal finance assistant that understands your spending without requiring you to enter data manually. Photograph a receipt, screenshot an eSewa or Khalti payment, or upload a bank statement PDF — the system extracts structured transaction data using a multimodal LLM and lets you query it in plain English.
+Ledgr is an automated personal finance platform that ingests unstructured financial documents—physical receipts, digital wallet screenshots, and PDF bank statements—and converts them into a structured, queryable data store using multimodal Language Models.
 
 ---
 
-## What it does
+## Overview
 
-- **Ingests** physical receipts, digital wallet screenshots (eSewa, Khalti, Fonepay), and bank statement PDFs
-- **Extracts** structured data (merchant, date, amount, category, line items) using Google Gemini Flash
-- **Persists** transactions to a local SQLite database for exact queries and a ChromaDB vector store for semantic search
-- **Answers** natural language questions by routing them to either a Text-to-SQL engine or a RAG pipeline depending on intent
+Traditional finance tracking requires manual data entry. Ledgr eliminates this friction through automated multimodal extraction, persisting transaction data in both a relational database for deterministic queries and a vector store for semantic search.
+
+![App Dashboard Screenshot](screenshots/dashboard_placeholder.png)
+*(Placeholder: Dashboard Overview)*
+
+### Core Capabilities
+
+*   **Multimodal Ingestion**: Process physical receipts, digital wallet screenshots (eSewa, Khalti, Fonepay), and bank statement PDFs.
+*   **Structured Extraction**: Utilize Google Gemini Flash to extract merchant names, dates, amounts, categories, and line items.
+*   **Dual Persistence Architecture**: 
+    *   Relational (SQLite): Exact queries, dates, amounts, and categorical grouping.
+    *   Vector Store (ChromaDB): Semantic similarity search for fuzzy queries.
+*   **Agentic Routing**: Natural language queries are routed dynamically to a Text-to-SQL engine or a RAG pipeline based on intent analysis.
+
+![AI Query Interface Screenshot](screenshots/query_interface_placeholder.png)
+*(Placeholder: Natural Language Query Interface)*
 
 ---
 
 ## Architecture
 
 ```
-Mobile App (React Native + Expo)
+Mobile Client (React Native + Expo)
         |
-        |  multipart/form-data upload
+        |  multipart/form-data payload
         v
-FastAPI Backend  ──── Google Gemini Flash (multimodal extraction)
+FastAPI Backend  ──── Google Gemini Flash (Multimodal LLM)
         |
         |  validated TransactionBatch (Pydantic v2)
         |
-        +──── SQLite (via SQLAlchemy)    ← exact queries, amounts, dates
+        +──── SQLite (SQLAlchemy)        <-- Quantitative routing
         |
-        +──── ChromaDB (local vector DB) ← semantic / fuzzy search
+        +──── ChromaDB (Vector Store)    <-- Semantic routing
         |
         v
 LangChain Agent Router
         |
-        +──── SQL Tool     → "total spent on groceries in July"
+        +──── SQL Tool     -> "Calculate total spent on groceries in July"
         |
-        +──── Vector Tool  → "where did I buy that filter coffee?"
+        +──── Vector Tool  -> "Where did I purchase filter coffee?"
 ```
 
-All infrastructure runs at zero cost:
+![Capture and Review Flow Screenshot](screenshots/capture_flow_placeholder.png)
+*(Placeholder: Receipt Capture and Review Flow)*
 
-| Component | Service |
-|---|---|
-| Backend | Oracle Cloud Always Free VM (Ubuntu) |
-| Authentication | Multi-user JWT with Bring-Your-Own-Key (BYOK) Gemini integration |
-| AI API | Google AI Studio (Gemini Flash, free tier) |
-| Mobile builds | EAS Cloud Builds (free tier) |
+![Analytics Dashboard Screenshot](screenshots/analytics_placeholder.png)
+*(Placeholder: Analytics and Data Visualization)*
 
----
-
-## Tech Stack
-
-**Backend**
-- Python 3.11+, FastAPI, Uvicorn
-- Pydantic v2, pydantic-settings
-- SQLAlchemy 2.0 (SQLite)
-- ChromaDB (local persistent vector store)
-- LangChain 0.3, langchain-google-genai
-
-**Mobile Client**
-- React Native, Expo (Managed Workflow, TypeScript)
-- expo-camera, expo-image-picker, expo-document-picker
-- expo-image-manipulator (client-side compression before upload)
-
-**Infrastructure**
-- Oracle Cloud Always Free VM
-- Multi-User SaaS (JWT Auth, User-isolated DBs)
-- EAS Cloud Builds (Android & iOS, no local Mac required)
+![Settings and Export Screenshot](screenshots/settings_placeholder.png)
+*(Placeholder: User Settings and CSV Data Export)*
 
 ---
 
-## Features
+## Technology Stack
 
-### Implemented
-- [x] Multimodal receipt extraction (images and PDFs via Gemini Flash)
-- [x] Structured output validated against Pydantic schema (merchant, date, amount, category, payment method, line items)
-- [x] Dual persistence: SQLite for relational data, ChromaDB for semantic search
-- [x] Natural language query endpoint with dual-tool LangChain agent
-- [x] Text-to-SQL routing for quantitative questions (totals, averages, date filters)
-- [x] Vector search routing for fuzzy/semantic questions
-- [x] File storage of original uploaded receipts
-- [x] React Native mobile client (capture + review + confirm flow)
-- [x] Conversational query screen in the mobile app
-- [x] Multi-user JWT Authentication
-- [x] Bring-Your-Own-Key (BYOK) Gemini AI support
-- [x] Deployment to Oracle Cloud VM via systemd
+**Backend Infrastructure**
+*   **Framework**: Python 3.11+, FastAPI, Uvicorn
+*   **Validation**: Pydantic v2, pydantic-settings
+*   **Database**: SQLAlchemy 2.0 (SQLite), ChromaDB
+*   **AI Integration**: LangChain 0.3, langchain-google-genai
 
-### Planned
-- [ ] Production EAS build for Android and iOS
-- [ ] HTTPS / Domain registration
+**Client Application**
+*   **Framework**: React Native, Expo (Managed Workflow, TypeScript)
+*   **Media Handling**: expo-camera, expo-image-picker, expo-document-picker
+*   **Optimization**: expo-image-manipulator (Client-side compression)
 
----
-
-## Data Contract
-
-Every source (receipt, screenshot, PDF) produces a `TransactionBatch`:
-
-```json
-{
-  "transactions": [
-    {
-      "merchant_or_entity": "Bhatbhateni Supermarket",
-      "date": "2024-07-10",
-      "amount": "1450.00",
-      "payment_method": "fonepay",
-      "category": "groceries",
-      "remarks": "Naxal branch",
-      "line_items": [
-        {
-          "name": "Milk 1L",
-          "quantity": "2",
-          "unit_price": "120.00",
-          "total_price": "240.00"
-        }
-      ]
-    }
-  ]
-}
-```
-
-Supported payment methods: `cash`, `fonepay`, `esewa`, `khalti`, `bank_transfer`, `card`, `other`
-
-Supported categories: `groceries`, `dining`, `utilities`, `transport`, `shopping`, `transfer`, `misc`
+**Deployment & Security**
+*   **Hosting**: Oracle Cloud Always Free VM
+*   **Authentication**: Multi-User SaaS (JWT Authentication, User-isolated Databases)
+*   **API Security**: Bring-Your-Own-Key (BYOK) architecture for LLM integration
+*   **CI/CD**: EAS Cloud Builds for native binaries
 
 ---
 
-## Local Development Setup
+## System Requirements
 
-### Prerequisites
-- Python 3.11+
-- Node.js 18+
-- A Google AI Studio API key (free at [aistudio.google.com](https://aistudio.google.com))
+*   Python 3.11 or higher
+*   Node.js 18 or higher
+*   Google AI Studio API Key
 
-### Backend
+## Setup and Deployment
+
+### Backend Initialization
 
 ```bash
 cd backend
 python -m venv .venv
-.venv\Scripts\activate        # Windows
-# source .venv/bin/activate   # macOS / Linux
+
+# Activate virtual environment (Windows)
+.venv\Scripts\activate
+# Activate virtual environment (macOS/Linux)
+# source .venv/bin/activate
 
 pip install -r requirements.txt
 
 cp .env.example .env
-# Edit .env and set GOOGLE_API_KEY
+# Configure GOOGLE_API_KEY and authentication secrets in .env
 
 python -m uvicorn app.main:app --reload
 ```
+*API documentation is automatically generated at `http://127.0.0.1:8000/docs`*
 
-API is available at `http://127.0.0.1:8000`
-Interactive docs at `http://127.0.0.1:8000/docs`
-
-### Mobile Client
+### Client Initialization
 
 ```bash
 cd client
 npx expo install
 npx expo start
 ```
-
-Scan the QR code with Expo Go on your physical device.
+*Use Expo Go on a physical device for development testing, or configure an Android Emulator/iOS Simulator.*
 
 ---
 
-## Query Examples
+## Query Engine Capabilities
 
-Once transactions are ingested, the `/api/v1/query/` endpoint accepts plain English:
+The `/api/v1/query/` endpoint processes natural language and determines the optimal query strategy:
 
-| Question | Routes to |
-|---|---|
-| "Total spent on dining this month?" | SQL Tool |
-| "How much did I spend via eSewa?" | SQL Tool |
-| "What did I buy at Bhatbhateni?" | Vector Tool |
-| "Where did I have soup momo?" | Vector Tool |
-| "Average monthly grocery spending?" | SQL Tool |
+| User Query | Selected Tool | Output |
+|---|---|---|
+| "Total spent on dining this month" | SQL Tool | Aggregated sum filtered by current month and category. |
+| "How much did I spend via eSewa" | SQL Tool | Aggregated sum filtered by payment method. |
+| "What did I buy at Bhatbhateni" | Vector Tool | Semantic retrieval of items associated with merchant. |
+| "Where did I have soup momo" | Vector Tool | Fuzzy match of line items returning merchant locations. |
+| "Average monthly grocery spending" | SQL Tool | Aggregated mathematical average over available months. |
 
 ---
 
 ## Project Status
 
-Active development. Backend core (extraction, storage, query agent) is functional. Mobile client is the current work in progress.
+**Status: Production Beta**
+*   Backend core (Extraction, Dual-Storage, Agentic Router, Authentication) is stable.
+*   Mobile client (Capture, Review, Query, Analytics) is functional and undergoing active development.
+*   Production EAS Android builds are available. iOS binary generation is planned for a future release.
