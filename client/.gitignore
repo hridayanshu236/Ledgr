@@ -41,4 +41,3 @@ yarn-error.*
 /android
 
 # local device config — contains IP address, never commit
-constants/config.ts

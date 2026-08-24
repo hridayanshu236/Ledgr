@@ -149,7 +149,7 @@ export default function HomeScreen({ onCapture }: Props) {
       {error && (
         <View style={styles.center}>
           <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity style={styles.retryBtn} onPress={load}>
+          <TouchableOpacity style={styles.retryBtn} onPress={() => load()}>
             <Text style={styles.retryText}>Retry</Text>
           </TouchableOpacity>
         </View>
