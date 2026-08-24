@@ -21,7 +21,7 @@ class QueryResponse(BaseModel):
 async def query(
     request: QueryRequest, current_user: User = Depends(get_current_user)
 ) -> QueryResponse:
-    if not current_user.api_key:
-        raise HTTPException(status_code=400, detail="Missing Gemini API Key. Please add it in Settings.")
-    result = await agent_router.answer(request.question, current_user.id, current_user.api_key, request.history)
+    if not current_user.get_decrypted_api_key():
+        raise HTTPException(status_code=400, detail="Missing API Key. Please add it in Settings.")
+    result = await agent_router.answer(request.question, current_user.id, current_user.get_decrypted_api_key(), request.history)
     return QueryResponse(answer=result)

@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { deleteTransaction, updateTransaction } from "../lib/api";
 import { TransactionItem } from "../lib/types";
+import DropdownField from "./DropdownField";
 
 interface Props {
   visible: boolean;
@@ -135,15 +136,19 @@ export default function EditTransactionModal({ visible, transaction, onClose, on
               onChangeText={(v) => setEdited({ ...edited, amount: v })}
               keyboardType="decimal-pad"
             />
-            <Field
+            <DropdownField
               label="Category"
               value={edited.category}
-              onChangeText={(v) => setEdited({ ...edited, category: v as any })}
+              onChangeText={(v) => setEdited({ ...edited, category: v })}
+              options={["groceries", "dining", "utilities", "transport", "shopping", "transfer", "misc"]}
+              placeholder="Select or enter custom"
             />
-            <Field
+            <DropdownField
               label="Payment Method"
               value={edited.payment_method}
-              onChangeText={(v) => setEdited({ ...edited, payment_method: v as any })}
+              onChangeText={(v) => setEdited({ ...edited, payment_method: v })}
+              options={["cash", "fonepay", "esewa", "khalti", "bank_transfer", "card"]}
+              placeholder="Select or enter custom"
             />
             <Field
               label="Remarks"

@@ -4,7 +4,7 @@ import * as SecureStore from "expo-secure-store";
 import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
-import { StyleSheet, View, Text, TouchableOpacity } from "react-native";
+import { StyleSheet, View, Text, TouchableOpacity, Animated } from "react-native";
 
 import { setAuthToken } from "./lib/api";
 import CaptureScreen from "./screens/CaptureScreen";
@@ -13,9 +13,29 @@ import QueryScreen from "./screens/QueryScreen";
 import ReviewScreen from "./screens/ReviewScreen";
 import AuthScreen from "./screens/AuthScreen";
 import SettingsScreen from "./screens/SettingsScreen";
+import AnalyticsScreen from "./screens/AnalyticsScreen";
 import { TransactionBatch } from "./lib/types";
 
 const Tab = createBottomTabNavigator();
+
+const TabIcon = ({ focused, iconName, color, size }: { focused: boolean, iconName: any, color: string, size: number }) => {
+  const scale = React.useRef(new Animated.Value(1)).current;
+  
+  React.useEffect(() => {
+    Animated.spring(scale, {
+      toValue: focused ? 1.2 : 1,
+      useNativeDriver: true,
+      friction: 5,
+      tension: 100
+    }).start();
+  }, [focused, scale]);
+
+  return (
+    <Animated.View style={{ transform: [{ scale }] }}>
+      <Ionicons name={iconName} size={size} color={color} />
+    </Animated.View>
+  );
+};
 
 export default function App() {
   const [token, setToken] = useState<string | null>(null);
@@ -114,12 +134,14 @@ export default function App() {
             let iconName = "home";
             if (route.name === "Dashboard") {
               iconName = focused ? "home" : "home-outline";
+            } else if (route.name === "Analytics") {
+              iconName = focused ? "bar-chart" : "bar-chart-outline";
             } else if (route.name === "Ledgr AI") {
               iconName = focused ? "chatbubbles" : "chatbubbles-outline";
             } else if (route.name === "Settings") {
               iconName = focused ? "settings" : "settings-outline";
             }
-            return <Ionicons name={iconName as any} size={size} color={color} />;
+            return <TabIcon focused={focused} iconName={iconName} size={size} color={color} />;
           },
           tabBarActiveTintColor: "#6C63FF",
           tabBarInactiveTintColor: "#888",
@@ -132,6 +154,9 @@ export default function App() {
       >
         <Tab.Screen name="Dashboard">
           {() => <HomeScreen onCapture={() => setIsCapturing(true)} />}
+        </Tab.Screen>
+        <Tab.Screen name="Analytics">
+          {() => <AnalyticsScreen />}
         </Tab.Screen>
         <Tab.Screen name="Ledgr AI">
           {() => <QueryScreen messages={chatHistory} setMessages={setChatHistory} />}

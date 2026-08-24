@@ -5,10 +5,18 @@ echo "Starting Ledgr Backend Setup..."
 
 # Update and install dependencies
 sudo apt update
-sudo apt install -y software-properties-common
-sudo add-apt-repository ppa:deadsnakes/ppa -y
-sudo apt update
-sudo apt install -y python3.11 python3.11-venv python3.11-dev python3-pip sqlite3 build-essential
+sudo apt install -y software-properties-common wget build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libsqlite3-dev libreadline-dev libffi-dev curl libbz2-dev sqlite3
+
+if ! command -v python3.11 &> /dev/null; then
+    echo "Python 3.11 not found. Compiling from source (this may take a few minutes)..."
+    cd /tmp
+    wget https://www.python.org/ftp/python/3.11.9/Python-3.11.9.tgz
+    tar -xf Python-3.11.9.tgz
+    cd Python-3.11.9
+    ./configure --enable-optimizations
+    sudo make altinstall
+    cd ~
+fi
 
 # Create project directory
 mkdir -p /home/ubuntu/ledgr/backend

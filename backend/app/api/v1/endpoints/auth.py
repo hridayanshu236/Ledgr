@@ -55,7 +55,7 @@ def update_user_settings(
     current_user: User = Depends(get_current_user),
 ):
     if settings_in.api_key is not None:
-        current_user.api_key = settings_in.api_key
+        current_user.set_encrypted_api_key(settings_in.api_key)
     db.add(current_user)
     db.commit()
     db.refresh(current_user)

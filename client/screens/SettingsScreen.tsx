@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react";
+import * as FileSystem from "expo-file-system/legacy";
+import * as Sharing from "expo-sharing";
 import {
   ActivityIndicator,
   Alert,
@@ -7,13 +9,15 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  ScrollView,
 } from "react-native";
-import { getUserSettings, updateUserSettings } from "../lib/api";
+import { getUserSettings, updateUserSettings, getTransactions } from "../lib/api";
 
 export default function SettingsScreen({ onLogout }: { onLogout: () => void }) {
   const [apiKey, setApiKey] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -43,8 +47,48 @@ export default function SettingsScreen({ onLogout }: { onLogout: () => void }) {
     }
   }
 
+  async function handleExport() {
+    try {
+      setExporting(true);
+      const txs = await getTransactions({});
+      
+      if (txs.length === 0) {
+        Alert.alert("No Data", "You have no transactions to export.");
+        return;
+      }
+      
+      // Build CSV string
+      const header = "Date,Merchant,Amount,Category,Payment Method,Remarks\n";
+      const rows = txs.map(tx => {
+        // Replace commas to avoid breaking CSV format
+        const cleanRemarks = tx.remarks ? tx.remarks.replace(/,/g, " ") : "";
+        const cleanMerchant = tx.merchant_or_entity ? tx.merchant_or_entity.replace(/,/g, " ") : "";
+        return `${tx.date},"${cleanMerchant}",${tx.amount},${tx.category},${tx.payment_method},"${cleanRemarks}"`;
+      });
+      const csv = header + rows.join("\n");
+      
+      const fileUri = FileSystem.documentDirectory + "ledgr_transactions.csv";
+      await FileSystem.writeAsStringAsync(fileUri, csv);
+      
+      const canShare = await Sharing.isAvailableAsync();
+      if (canShare) {
+        await Sharing.shareAsync(fileUri, {
+          mimeType: "text/csv",
+          dialogTitle: "Export Ledgr Data",
+        });
+      } else {
+        Alert.alert("Error", "Sharing is not available on this device.");
+      }
+    } catch (e: any) {
+      console.error("Export Error: ", e);
+      Alert.alert("Error", `Failed to export data: ${e?.message || e}`);
+    } finally {
+      setExporting(false);
+    }
+  }
+
   return (
-    <View style={styles.container}>
+    <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.heading}>Settings</Text>
 
       {loading ? (
@@ -79,17 +123,35 @@ export default function SettingsScreen({ onLogout }: { onLogout: () => void }) {
         </View>
       )}
 
+      <View style={styles.card}>
+        <Text style={styles.label}>Export Data</Text>
+        <Text style={styles.description}>
+          Download your complete transaction history as a CSV file to use in Excel or Google Sheets.
+        </Text>
+        <TouchableOpacity
+          style={[styles.exportBtn, exporting && styles.disabledBtn]}
+          onPress={handleExport}
+          disabled={exporting}
+        >
+          {exporting ? (
+            <ActivityIndicator color="#6C63FF" />
+          ) : (
+            <Text style={styles.exportBtnText}>Export to CSV</Text>
+          )}
+        </TouchableOpacity>
+      </View>
+
       <TouchableOpacity style={styles.logoutBtn} onPress={onLogout}>
         <Text style={styles.logoutText}>Log Out</Text>
       </TouchableOpacity>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0F0F1A", padding: 24, paddingTop: 60 },
+  container: { flexGrow: 1, backgroundColor: "#0F0F1A", padding: 24, paddingTop: 60, paddingBottom: 100 },
   heading: { fontSize: 28, fontWeight: "700", color: "#E8E8F0", marginBottom: 24 },
-  card: { backgroundColor: "#1C1C2E", padding: 20, borderRadius: 16 },
+  card: { backgroundColor: "#1C1C2E", padding: 20, borderRadius: 16, marginBottom: 20 },
   label: { fontSize: 16, fontWeight: "600", color: "#E8E8F0", marginBottom: 8 },
   description: { fontSize: 13, color: "#888", marginBottom: 20, lineHeight: 20 },
   input: {
@@ -110,6 +172,15 @@ const styles = StyleSheet.create({
   },
   disabledBtn: { opacity: 0.7 },
   saveBtnText: { color: "#FFF", fontSize: 16, fontWeight: "700" },
+  exportBtn: {
+    backgroundColor: "rgba(108, 99, 255, 0.15)",
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#6C63FF",
+  },
+  exportBtnText: { color: "#6C63FF", fontSize: 16, fontWeight: "700" },
   logoutBtn: {
     marginTop: 40,
     padding: 16,

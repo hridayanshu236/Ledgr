@@ -1,7 +1,7 @@
 import datetime
 from decimal import Decimal
 from enum import StrEnum
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class PaymentMethod(StrEnum):
@@ -41,8 +41,8 @@ class TransactionItem(BaseModel):
     merchant_or_entity: str
     date: datetime.date
     amount: Decimal
-    payment_method: PaymentMethod
-    category: Category
+    payment_method: str = Field(description="Payment method used (e.g., cash, fonepay, esewa, khalti, bank_transfer, card, or custom like dental, health)")
+    category: str = Field(description="Category of the transaction (e.g., groceries, dining, utilities, transport, shopping, transfer, misc, or custom like health, dental)")
     remarks: str | None = None
     file_path: str | None = None
     line_items: list[LineItem] = []

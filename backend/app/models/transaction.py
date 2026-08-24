@@ -6,7 +6,7 @@ from sqlalchemy import Date, Enum, ForeignKey, Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
-from app.schemas.transaction import Category, PaymentMethod
+from app.db.base import Base
 
 
 class Transaction(Base):
@@ -21,14 +21,8 @@ class Transaction(Base):
     merchant_or_entity: Mapped[str] = mapped_column(String, nullable=False)
     date: Mapped[datetime.date] = mapped_column(Date, nullable=False)
     amount: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
-    payment_method: Mapped[PaymentMethod] = mapped_column(
-        Enum(PaymentMethod, native_enum=False),
-        nullable=False,
-    )
-    category: Mapped[Category] = mapped_column(
-        Enum(Category, native_enum=False),
-        nullable=False,
-    )
+    payment_method: Mapped[str] = mapped_column(String, nullable=False)
+    category: Mapped[str] = mapped_column(String, nullable=False)
     remarks: Mapped[str | None] = mapped_column(String, nullable=True)
     file_path: Mapped[str | None] = mapped_column(String, nullable=True)
     created_at: Mapped[datetime.date] = mapped_column(

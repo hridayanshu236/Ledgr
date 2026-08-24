@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { confirmBatch } from "../lib/api";
 import { TransactionBatch, TransactionItem } from "../lib/types";
+import DropdownField from "../components/DropdownField";
 
 interface Props {
   batch: TransactionBatch;
@@ -43,15 +44,19 @@ function TransactionEditor({
         onChangeText={(v) => onChange({ ...tx, amount: v as any })}
         keyboardType="decimal-pad"
       />
-      <Field
+      <DropdownField
         label="Category"
         value={tx.category}
-        onChangeText={(v) => onChange({ ...tx, category: v as any })}
+        onChangeText={(v) => onChange({ ...tx, category: v })}
+        options={["groceries", "dining", "utilities", "transport", "shopping", "transfer", "misc"]}
+        placeholder="Select or enter custom"
       />
-      <Field
+      <DropdownField
         label="Payment Method"
         value={tx.payment_method}
-        onChangeText={(v) => onChange({ ...tx, payment_method: v as any })}
+        onChangeText={(v) => onChange({ ...tx, payment_method: v })}
+        options={["cash", "fonepay", "esewa", "khalti", "bank_transfer", "card"]}
+        placeholder="Select or enter custom"
       />
       <Field
         label="Remarks"

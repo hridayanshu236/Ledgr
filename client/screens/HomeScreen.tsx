@@ -7,11 +7,16 @@ import {
   TouchableOpacity,
   Dimensions,
   View,
+  RefreshControl,
+  TextInput,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { GetTransactionsParams } from "../lib/api";
 import { PieChart } from "react-native-chart-kit";
 import { getTransactions } from "../lib/api";
 import { TransactionItem } from "../lib/types";
 import EditTransactionModal from "../components/EditTransactionModal";
+import FilterModal from "../components/FilterModal";
 
 interface Props {
   onCapture: () => void;
@@ -28,7 +33,10 @@ function TransactionCard({ item, onPress }: { item: TransactionItem; onPress: ()
       </View>
       <View style={styles.cardRow}>
         <Text style={styles.meta}>{item.date}</Text>
-        <Text style={styles.category}>{item.category}</Text>
+        <View style={styles.categoryContainer}>
+          <Ionicons name="pricetag-outline" size={12} color="#888" style={{ marginRight: 4 }} />
+          <Text style={styles.category}>{item.category.toUpperCase()}</Text>
+        </View>
       </View>
       {item.remarks ? (
         <Text style={styles.remarks} numberOfLines={1}>
@@ -42,21 +50,40 @@ function TransactionCard({ item, onPress }: { item: TransactionItem; onPress: ()
 export default function HomeScreen({ onCapture }: Props) {
   const [transactions, setTransactions] = useState<TransactionItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedTx, setSelectedTx] = useState<TransactionItem | null>(null);
+  
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filters, setFilters] = useState<GetTransactionsParams>({});
+  const [filterModalVisible, setFilterModalVisible] = useState(false);
 
   const screenWidth = Dimensions.get("window").width;
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (isRefresh = false, currentFilters?: GetTransactionsParams, currentSearch?: string) => {
     try {
-      setLoading(true);
+      if (isRefresh) setRefreshing(true);
+      else setLoading(true);
       setError(null);
-      const data = await getTransactions();
+      
+      const params = {
+        ...currentFilters || filters,
+        search: currentSearch !== undefined ? currentSearch : searchQuery
+      };
+      // Clean up empty params
+      Object.keys(params).forEach(k => {
+        if (!params[k as keyof GetTransactionsParams]) {
+          delete params[k as keyof GetTransactionsParams];
+        }
+      });
+      
+      const data = await getTransactions(params);
       setTransactions(data);
     } catch {
       setError("Could not reach the server. Check your network and BACKEND_URL.");
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, []);
 
@@ -85,6 +112,37 @@ export default function HomeScreen({ onCapture }: Props) {
       <View style={styles.headerRow}>
         <Text style={styles.heading}>Ledgr</Text>
       </View>
+      
+      <View style={styles.searchRow}>
+        <View style={styles.searchBar}>
+          <Ionicons name="search" size={20} color="#888" style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search merchants, notes..."
+            placeholderTextColor="#555"
+            value={searchQuery}
+            onChangeText={(text) => {
+              setSearchQuery(text);
+              load(false, filters, text); // real-time search
+            }}
+          />
+          {searchQuery ? (
+            <TouchableOpacity onPress={() => {
+              setSearchQuery("");
+              load(false, filters, "");
+            }}>
+              <Ionicons name="close-circle" size={20} color="#888" />
+            </TouchableOpacity>
+          ) : null}
+        </View>
+        
+        <TouchableOpacity 
+          style={[styles.filterBtn, Object.keys(filters).length > 0 && styles.filterBtnActive]}
+          onPress={() => setFilterModalVisible(true)}
+        >
+          <Ionicons name="options-outline" size={24} color={Object.keys(filters).length > 0 ? "#FFF" : "#888"} />
+        </TouchableOpacity>
+      </View>
 
       {loading && <ActivityIndicator style={styles.center} size="large" color="#6C63FF" />}
 
@@ -108,6 +166,15 @@ export default function HomeScreen({ onCapture }: Props) {
         <FlatList
           data={transactions}
           keyExtractor={(item, i) => item.id || String(i)}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => load(true, filters, searchQuery)}
+              tintColor="#6C63FF"
+              colors={["#6C63FF"]}
+              progressBackgroundColor="#1C1C2E"
+            />
+          }
           ListHeaderComponent={
             <View style={styles.chartContainer}>
               <Text style={styles.chartTitle}>Spending Breakdown</Text>
@@ -147,6 +214,16 @@ export default function HomeScreen({ onCapture }: Props) {
         onClose={() => setSelectedTx(null)}
         onUpdated={load}
       />
+      
+      <FilterModal
+        visible={filterModalVisible}
+        filters={filters}
+        onApply={(f) => {
+          setFilters(f);
+          load(false, f, searchQuery);
+        }}
+        onClose={() => setFilterModalVisible(false)}
+      />
     </View>
   );
 }
@@ -165,6 +242,47 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: "700",
     color: "#E8E8F0",
+  },
+  searchRow: {
+    flexDirection: "row",
+    paddingHorizontal: 16,
+    marginBottom: 16,
+    alignItems: "center",
+  },
+  searchBar: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#1C1C2E",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    height: 44,
+    borderWidth: 1,
+    borderColor: "#2A2A3E",
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    color: "#E8E8F0",
+    fontSize: 15,
+    height: "100%",
+  },
+  filterBtn: {
+    width: 44,
+    height: 44,
+    backgroundColor: "#1C1C2E",
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+    marginLeft: 12,
+    borderWidth: 1,
+    borderColor: "#2A2A3E",
+  },
+  filterBtnActive: {
+    backgroundColor: "#6C63FF",
+    borderColor: "#6C63FF",
   },
   chartContainer: {
     backgroundColor: "#1C1C2E",
@@ -197,14 +315,15 @@ const styles = StyleSheet.create({
   merchant: { fontSize: 16, fontWeight: "600", color: "#E8E8F0", flex: 1, marginRight: 8 },
   amount: { fontSize: 16, fontWeight: "700", color: "#6C63FF" },
   meta: { fontSize: 12, color: "#888" },
+  categoryContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
   category: {
     fontSize: 11,
-    color: "#6C63FF",
-    backgroundColor: "#2A2A3E",
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
-    overflow: "hidden",
+    color: "#888",
+    fontWeight: "600",
+    letterSpacing: 0.5,
   },
   remarks: { fontSize: 12, color: "#666", marginTop: 4 },
   center: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24 },

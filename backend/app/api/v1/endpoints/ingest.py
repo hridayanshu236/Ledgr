@@ -30,11 +30,11 @@ async def ingest_file(
             detail=f"Unsupported file type: {file.content_type}. Accepted: {sorted(ALLOWED_MIME_TYPES)}",
         )
 
-    if not current_user.api_key:
-        raise HTTPException(status_code=400, detail="Missing Gemini API Key. Please add it in Settings.")
+    if not current_user.get_decrypted_api_key():
+        raise HTTPException(status_code=400, detail="Missing API Key. Please add it in Settings.")
 
     file_bytes = await file.read()
-    batch = await extractor.extract(file_bytes, file.content_type, current_user.api_key)
+    batch = await extractor.extract(file_bytes, file.content_type, current_user.get_decrypted_api_key())
     
     file_path = save_image_to_disk(file_bytes, file.filename)
     for tx in batch.transactions:
