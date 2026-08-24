@@ -10,7 +10,7 @@ Ledgr is an automated personal finance platform that ingests unstructured financ
 
 Traditional finance tracking requires manual data entry. Ledgr eliminates this friction through automated multimodal extraction, persisting transaction data in both a relational database for deterministic queries and a vector store for semantic search.
 
-![App Dashboard Screenshot](screenshots/dashboard_placeholder.png)
+<img src="screenshots/dashboard_placeholder.png" alt="App Dashboard Screenshot" width="250" />
 *(Placeholder: Dashboard Overview)*
 
 ### Core Capabilities
@@ -22,7 +22,7 @@ Traditional finance tracking requires manual data entry. Ledgr eliminates this f
     *   Vector Store (ChromaDB): Semantic similarity search for fuzzy queries.
 *   **Agentic Routing**: Natural language queries are routed dynamically to a Text-to-SQL engine or a RAG pipeline based on intent analysis.
 
-![AI Query Interface Screenshot](screenshots/query_interface_placeholder.png)
+<img src="screenshots/query_interface_placeholder.png" alt="AI Query Interface Screenshot" width="250" />
 *(Placeholder: Natural Language Query Interface)*
 
 ---
@@ -50,13 +50,13 @@ LangChain Agent Router
         +──── Vector Tool  -> "Where did I purchase filter coffee?"
 ```
 
-![Capture and Review Flow Screenshot](screenshots/capture_flow_placeholder.png)
+<img src="screenshots/capture_flow_placeholder.png" alt="Capture and Review Flow Screenshot" width="250" />
 *(Placeholder: Receipt Capture and Review Flow)*
 
-![Analytics Dashboard Screenshot](screenshots/analytics_placeholder.png)
+<img src="screenshots/analytics_placeholder.png" alt="Analytics Dashboard Screenshot" width="250" />
 *(Placeholder: Analytics and Data Visualization)*
 
-![Settings and Export Screenshot](screenshots/settings_placeholder.png)
+<img src="screenshots/settings_placeholder.png" alt="Settings and Export Screenshot" width="250" />
 *(Placeholder: User Settings and CSV Data Export)*
 
 ---
