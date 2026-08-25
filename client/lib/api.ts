@@ -91,6 +91,6 @@ export async function getUserSettings(): Promise<{ id: string; email: string; ap
   return data;
 }
 
-export async function updateUserSettings(settings: { api_key: string }): Promise<void> {
+export async function updateUserSettings(settings: { api_key?: string, push_token?: string }): Promise<void> {
   await api.put("/api/v1/auth/settings", settings);
 }

@@ -17,6 +17,8 @@ Traditional finance tracking requires manual data entry. Ledgr eliminates this f
 
 *   **Multimodal Ingestion**: Process physical receipts, digital wallet screenshots (eSewa, Khalti, Fonepay), and bank statement PDFs.
 *   **Structured Extraction**: Utilize Google Gemini Flash to extract merchant names, dates, amounts, categories, and line items.
+*   **Interactive E-Bills**: View fully digitized, editable receipt breakdowns with itemized pricing.
+*   **Budget Tracking**: Set weekly or monthly spending limits with visual progress bars and background push notifications when approaching thresholds.
 *   **Dual Persistence Architecture**: 
     *   Relational (SQLite): Exact queries, dates, amounts, and categorical grouping.
     *   Vector Store (ChromaDB): Semantic similarity search for fuzzy queries.
@@ -50,14 +52,15 @@ LangChain Agent Router
         +──── Vector Tool  -> "Where did I purchase filter coffee?"
 ```
 
-<img src="screenshots/capture_flow_placeholder.png" alt="Capture and Review Flow Screenshot" width="250" />
-*(Placeholder: Receipt Capture and Review Flow)*
+### UI Previews
 
-<img src="screenshots/analytics_placeholder.png" alt="Analytics Dashboard Screenshot" width="250" />
-*(Placeholder: Analytics and Data Visualization)*
-
-<img src="screenshots/settings_placeholder.png" alt="Settings and Export Screenshot" width="250" />
-*(Placeholder: User Settings and CSV Data Export)*
+| Receipt Capture | Analytics Dashboard |
+| :---: | :---: |
+| <img src="screenshots/capture_flow_placeholder.png" alt="Capture Flow" width="250" /> | <img src="screenshots/analytics_placeholder.png" alt="Analytics" width="250" /> |
+| **Capture & Extract** | **Data Visualization** |
+| | |
+| **Digital E-Bill** | **User Settings & Export** |
+| <img src="screenshots/bill_placeholder.png" alt="Detailed E-Bill" width="250" /> | <img src="screenshots/settings_placeholder.png" alt="Settings" width="250" /> |
 
 ---
 

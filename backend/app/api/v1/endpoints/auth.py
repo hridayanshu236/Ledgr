@@ -56,6 +56,12 @@ def update_user_settings(
 ):
     if settings_in.api_key is not None:
         current_user.set_encrypted_api_key(settings_in.api_key)
+    if settings_in.push_token is not None:
+        current_user.push_token = settings_in.push_token
+    if settings_in.budget_amount is not None:
+        current_user.budget_amount = settings_in.budget_amount
+    if settings_in.budget_period is not None:
+        current_user.budget_period = settings_in.budget_period
     db.add(current_user)
     db.commit()
     db.refresh(current_user)

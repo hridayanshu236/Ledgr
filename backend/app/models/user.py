@@ -1,4 +1,5 @@
 from sqlalchemy import Column, String, DateTime
+from sqlalchemy import Column, String, DateTime, Float
 from sqlalchemy.orm import relationship
 from datetime import datetime, timezone
 import uuid
@@ -16,6 +17,9 @@ class User(Base):
     email = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
     api_key = Column(String, nullable=True) # Gemini API Key
+    push_token = Column(String, nullable=True) # Expo Push Token
+    budget_amount = Column(Float, nullable=True)
+    budget_period = Column(String, nullable=True, default="monthly") # 'weekly' or 'monthly'
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     transactions = relationship("Transaction", back_populates="user", cascade="all, delete-orphan")

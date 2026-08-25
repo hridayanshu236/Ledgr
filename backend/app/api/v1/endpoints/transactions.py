@@ -1,5 +1,5 @@
 import uuid
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, extract
 
@@ -9,6 +9,7 @@ from app.models.user import User
 from app.schemas.transaction import TransactionBatch, TransactionItem
 from app.services.persistence import save_batch
 from app.api.deps import get_current_user
+from app.services.budget_monitor import check_budget_thresholds
 
 router = APIRouter()
 
@@ -60,18 +61,25 @@ def list_transactions(
 
 @router.post("/confirm/", response_model=TransactionBatch)
 def confirm_batch(
-    batch: TransactionBatch, 
+    batch: TransactionBatch,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ) -> TransactionBatch:
     save_batch(batch, db, current_user.id)
+    
+    # Check budget thresholds asynchronously
+    for tx in batch.transactions:
+        background_tasks.add_task(check_budget_thresholds, current_user.id, tx)
+        
     return batch
 
 
 @router.put("/{tx_id}", response_model=TransactionItem)
 def update_transaction(
     tx_id: str, 
-    tx: TransactionItem, 
+    tx: TransactionItem,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -108,6 +116,8 @@ def update_transaction(
     
     from app.services import vector_store
     vector_store.update_transaction(tx, tx_id, current_user.id)
+    
+    background_tasks.add_task(check_budget_thresholds, current_user.id, tx)
     
     return tx
 

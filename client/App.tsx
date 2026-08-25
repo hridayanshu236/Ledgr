@@ -2,12 +2,15 @@ import { StatusBar } from "expo-status-bar";
 import React, { useState } from "react";
 import * as SecureStore from "expo-secure-store";
 import { NavigationContainer } from "@react-navigation/native";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { StyleSheet, View, Text, TouchableOpacity, Animated } from "react-native";
+import { StyleSheet, View, Text, TouchableOpacity, Animated, Platform } from "react-native";
+import * as Device from "expo-device";
+import * as Notifications from "expo-notifications";
 
-import { setAuthToken } from "./lib/api";
+import { setAuthToken, updateUserSettings } from "./lib/api";
 import CaptureScreen from "./screens/CaptureScreen";
 import HomeScreen from "./screens/HomeScreen";
 import QueryScreen from "./screens/QueryScreen";
@@ -15,9 +18,12 @@ import ReviewScreen from "./screens/ReviewScreen";
 import AuthScreen from "./screens/AuthScreen";
 import SettingsScreen from "./screens/SettingsScreen";
 import AnalyticsScreen from "./screens/AnalyticsScreen";
+import BudgetsScreen from "./screens/BudgetsScreen";
+import TransactionDetailScreen from "./screens/TransactionDetailScreen";
 import { TransactionBatch } from "./lib/types";
 
 const Tab = createBottomTabNavigator();
+const Stack = createNativeStackNavigator();
 
 const TabIcon = ({ focused, iconName, color, size }: { focused: boolean, iconName: any, color: string, size: number }) => {
   const scale = React.useRef(new Animated.Value(1)).current;
@@ -61,16 +67,53 @@ export default function App() {
       if (storedToken) {
         setToken(storedToken);
         setAuthToken(storedToken);
+        await registerForPushNotificationsAsync();
       }
       setIsLoading(false);
     }
     checkAuth();
   }, []);
 
+  async function registerForPushNotificationsAsync() {
+    let pushToken;
+
+    if (Platform.OS === 'android') {
+      await Notifications.setNotificationChannelAsync('default', {
+        name: 'default',
+        importance: Notifications.AndroidImportance.MAX,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: '#FF231F7C',
+      });
+    }
+
+    if (Device.isDevice) {
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      let finalStatus = existingStatus;
+      if (existingStatus !== 'granted') {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+      }
+      if (finalStatus !== 'granted') {
+        return;
+      }
+      try {
+        pushToken = (await Notifications.getExpoPushTokenAsync({
+          projectId: '8ec5955f-fc3c-4172-be89-1c446ab305d2', // Project ID from eas.json/app.json logs
+        })).data;
+        if (pushToken) {
+          await updateUserSettings({ push_token: pushToken });
+        }
+      } catch (e) {
+        console.log("Push token error:", e);
+      }
+    }
+  }
+
   async function handleLogin(newToken: string) {
     await SecureStore.setItemAsync("token", newToken);
     setToken(newToken);
     setAuthToken(newToken);
+    await registerForPushNotificationsAsync();
   }
 
   async function handleLogout() {
@@ -136,43 +179,61 @@ export default function App() {
     <SafeAreaProvider>
       <NavigationContainer>
         <StatusBar style="light" />
-        <Tab.Navigator
-          screenOptions={({ route }) => ({
-            tabBarIcon: ({ focused, color, size }) => {
-              let iconName = "home";
-              if (route.name === "Dashboard") {
-                iconName = focused ? "home" : "home-outline";
-              } else if (route.name === "Analytics") {
-                iconName = focused ? "bar-chart" : "bar-chart-outline";
-              } else if (route.name === "Ledgr AI") {
-                iconName = focused ? "chatbubbles" : "chatbubbles-outline";
-              } else if (route.name === "Settings") {
-                iconName = focused ? "settings" : "settings-outline";
-              }
-              return <TabIcon focused={focused} iconName={iconName} size={size} color={color} />;
-            },
-            tabBarActiveTintColor: "#6C63FF",
-            tabBarInactiveTintColor: "#888",
-            tabBarStyle: {
-              backgroundColor: "#1C1C2E",
-              borderTopColor: "#2A2A3E",
-            },
-            headerShown: false,
-          })}
-        >
-          <Tab.Screen name="Dashboard">
-            {() => <HomeScreen onCapture={() => setIsCapturing(true)} />}
-          </Tab.Screen>
-          <Tab.Screen name="Analytics">
-            {() => <AnalyticsScreen />}
-          </Tab.Screen>
-          <Tab.Screen name="Ledgr AI">
-            {() => <QueryScreen messages={chatHistory} setMessages={setChatHistory} />}
-          </Tab.Screen>
-          <Tab.Screen name="Settings">
-            {() => <SettingsScreen onLogout={handleLogout} />}
-          </Tab.Screen>
-        </Tab.Navigator>
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="MainTabs">
+            {() => (
+              <Tab.Navigator
+                screenOptions={({ route }) => ({
+                  tabBarIcon: ({ focused, color, size }) => {
+                    let iconName = "home";
+                    if (route.name === "Dashboard") {
+                      iconName = focused ? "home" : "home-outline";
+                    } else if (route.name === "Analytics") {
+                      iconName = focused ? "bar-chart" : "bar-chart-outline";
+                    } else if (route.name === "Budgets") {
+                      iconName = focused ? "wallet" : "wallet-outline";
+                    } else if (route.name === "Ledgr AI") {
+                      iconName = focused ? "chatbubbles" : "chatbubbles-outline";
+                    } else if (route.name === "Settings") {
+                      iconName = focused ? "settings" : "settings-outline";
+                    }
+                    return <TabIcon focused={focused} iconName={iconName} size={size} color={color} />;
+                  },
+                  tabBarActiveTintColor: "#6C63FF",
+                  tabBarInactiveTintColor: "#888",
+                  tabBarStyle: {
+                    backgroundColor: "#1C1C2E",
+                    borderTopColor: "#2A2A3E",
+                  },
+                  headerShown: false,
+                })}
+              >
+                <Tab.Screen name="Dashboard">
+                  {() => <HomeScreen onCapture={() => setIsCapturing(true)} />}
+                </Tab.Screen>
+                <Tab.Screen name="Analytics">
+                  {() => <AnalyticsScreen />}
+                </Tab.Screen>
+                <Tab.Screen name="Budgets">
+                  {() => <BudgetsScreen />}
+                </Tab.Screen>
+                <Tab.Screen name="Ledgr AI">
+                  {() => <QueryScreen messages={chatHistory} setMessages={setChatHistory} />}
+                </Tab.Screen>
+                <Tab.Screen name="Settings">
+                  {() => <SettingsScreen onLogout={handleLogout} />}
+                </Tab.Screen>
+              </Tab.Navigator>
+            )}
+          </Stack.Screen>
+          
+          {/* Detailed receipt view that sits on top of the tabs */}
+          <Stack.Screen 
+            name="TransactionDetail" 
+            component={TransactionDetailScreen} 
+            options={{ presentation: "modal" }}
+          />
+        </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>
   );

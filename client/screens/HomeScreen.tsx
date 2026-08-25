@@ -11,6 +11,7 @@ import {
   TextInput,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useNavigation, useRoute, useFocusEffect } from "@react-navigation/native";
 import { GetTransactionsParams } from "../lib/api";
 import { PieChart } from "react-native-chart-kit";
 import { getTransactions } from "../lib/api";
@@ -48,6 +49,9 @@ function TransactionCard({ item, onPress }: { item: TransactionItem; onPress: ()
 }
 
 export default function HomeScreen({ onCapture }: Props) {
+  const navigation = useNavigation();
+  const route = useRoute();
+  
   const [transactions, setTransactions] = useState<TransactionItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -85,11 +89,17 @@ export default function HomeScreen({ onCapture }: Props) {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [filters, searchQuery]);
 
   useEffect(() => {
     load();
-  }, [load]);
+  }, [filters]);
+
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load])
+  );
 
   // Group by category for the pie chart
   const categoryTotals: Record<string, number> = {};
@@ -184,21 +194,53 @@ export default function HomeScreen({ onCapture }: Props) {
                   width={screenWidth - 32}
                   height={180}
                   chartConfig={{
+                    backgroundGradientFrom: "#1E2923",
+                    backgroundGradientFromOpacity: 0,
+                    backgroundGradientTo: "#08130D",
+                    backgroundGradientToOpacity: 0,
                     color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
                   }}
                   accessor={"amount"}
-                  backgroundColor={"transparent"}
-                  paddingLeft={"15"}
-                  center={[10, 0]}
+                  hasLegend={false}
+                  paddingLeft={"0"}
+                  center={[screenWidth / 4, 0]}
                   absolute
+                  transparent={true}
+                  backgroundColor={"transparent"}
                 />
               ) : (
                 <Text style={styles.emptySubtext}>No data for chart</Text>
               )}
+              
+              {/* Custom Interactive Legend */}
+              {chartData.length > 0 && (
+                <View style={styles.legendContainer}>
+                  {chartData.map((data, index) => {
+                    const isActive = filters.category === data.name;
+                    return (
+                      <TouchableOpacity 
+                        key={index} 
+                        style={[styles.legendItem, isActive && styles.legendItemActive]}
+                        onPress={() => {
+                          const newCategory = isActive ? undefined : data.name;
+                          const newFilters = { ...filters, category: newCategory };
+                          setFilters(newFilters);
+                          load(false, newFilters, searchQuery);
+                        }}
+                      >
+                        <View style={[styles.legendColor, { backgroundColor: data.color }]} />
+                        <Text style={[styles.legendText, isActive && styles.legendTextActive]}>
+                          {data.name.charAt(0).toUpperCase() + data.name.slice(1)}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              )}
             </View>
           }
           renderItem={({ item }) => (
-            <TransactionCard item={item} onPress={() => setSelectedTx(item)} />
+            <TransactionCard item={item} onPress={() => (navigation as any).navigate("TransactionDetail", { transaction: item })} />
           )}
           contentContainerStyle={styles.list}
         />
@@ -258,7 +300,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     height: 44,
     borderWidth: 1,
-    borderColor: "#2A2A3E",
+    borderColor: "rgba(255, 255, 255, 0.1)",
   },
   searchIcon: {
     marginRight: 8,
@@ -278,7 +320,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginLeft: 12,
     borderWidth: 1,
-    borderColor: "#2A2A3E",
+    borderColor: "rgba(255, 255, 255, 0.1)",
   },
   filterBtnActive: {
     backgroundColor: "#6C63FF",
@@ -293,18 +335,56 @@ const styles = StyleSheet.create({
   },
   chartTitle: {
     color: "#E8E8F0",
-    fontSize: 16,
-    fontWeight: "600",
+    fontSize: 18,
+    fontWeight: "700",
     alignSelf: "flex-start",
+    paddingHorizontal: 24,
+    marginBottom: 16,
+  },
+  legendContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
     paddingHorizontal: 16,
-    marginBottom: 8,
+    gap: 8,
+    marginTop: 16,
+  },
+  legendItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "transparent"
+  },
+  legendItemActive: {
+    backgroundColor: "rgba(108, 99, 255, 0.15)",
+    borderColor: "rgba(108, 99, 255, 0.5)"
+  },
+  legendColor: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginRight: 8,
+  },
+  legendText: {
+    color: "#888",
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  legendTextActive: {
+    color: "#6C63FF",
   },
   list: { paddingHorizontal: 16, paddingBottom: 100 },
   card: {
-    backgroundColor: "#1C1C2E",
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: "rgba(28, 28, 46, 0.6)",
+    borderRadius: 16,
+    padding: 20,
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.05)",
   },
   cardRow: {
     flexDirection: "row",

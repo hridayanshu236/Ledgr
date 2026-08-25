@@ -22,14 +22,7 @@ interface Props {
 export default function CaptureScreen({ onResult, onBack }: Props) {
   const [uploading, setUploading] = useState(false);
 
-  async function compress(uri: string): Promise<string> {
-    const result = await ImageManipulator.manipulateAsync(
-      uri,
-      [{ resize: { width: 1280 } }],
-      { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
-    );
-    return result.uri;
-  }
+
 
   async function upload(uri: string, mimeType: string, filename: string) {
     try {
@@ -50,21 +43,23 @@ export default function CaptureScreen({ onResult, onBack }: Props) {
       Alert.alert("Camera permission required");
       return;
     }
-    const result = await ImagePicker.launchCameraAsync({ quality: 1 });
+    const result = await ImagePicker.launchCameraAsync({ quality: 0.8, allowsEditing: false });
     if (result.canceled) return;
-    const compressed = await compress(result.assets[0].uri);
-    await upload(compressed, "image/jpeg", "receipt.jpg");
+    await upload(result.assets[0].uri, result.assets[0].mimeType || "image/jpeg", "receipt.jpg");
   }
 
   async function fromGallery() {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 1,
-    });
-    if (result.canceled) return;
-    const asset = result.assets[0];
-    const compressed = await compress(asset.uri);
-    await upload(compressed, "image/jpeg", asset.fileName ?? "receipt.jpg");
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        quality: 0.8,
+        allowsEditing: false,
+      });
+      if (result.canceled) return;
+      const asset = result.assets[0];
+      await upload(asset.uri, asset.mimeType || "image/jpeg", asset.fileName ?? "receipt.jpg");
+    } catch (e) {
+      Alert.alert("Gallery Error", String(e));
+    }
   }
 
   async function fromDocument() {
